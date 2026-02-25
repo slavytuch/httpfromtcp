@@ -34,6 +34,26 @@ const (
 )
 
 func (r *Request) parse(data []byte) (int, error) {
+	pIdx := 0
+
+	for r.status != requestStatusDone {
+		pb, err := r.parseSingle(data[pIdx:])
+
+		if err != nil {
+			return 0, err
+		}
+
+		if pb == 0 {
+			break
+		}
+
+		pIdx += pb
+	}
+
+	return pIdx, nil
+}
+
+func (r *Request) parseSingle(data []byte) (int, error) {
 	switch r.status {
 	case "":
 		r.status = requestStatusInitialized
@@ -53,28 +73,30 @@ func (r *Request) parse(data []byte) (int, error) {
 			return 0, err
 		}
 		if done {
+			fmt.Println("Done with headers!")
 			r.status = requestStatusParsingBody
+
 		}
 		return prhn, nil
 	case requestStatusParsingBody:
-		bodyLength, err := strconv.Atoi(r.Headers.Get("content-length"))
+		cl := 0
 
-		if err != nil {
-			return 0, err
+		if clh := r.Headers.Get("content-length"); clh != "" {
+			cl, _ = strconv.Atoi(clh)
 		}
 
-		if bodyLength == 0 {
+		if cl == 0 {
 			r.status = requestStatusDone
 			return 0, nil
 		}
 
 		r.Body = append(r.Body, data...)
 
-		if len(r.Body) > bodyLength {
+		if len(r.Body) > cl {
 			return 0, errors.New("error content body and header length mismatch")
 		}
 
-		if len(r.Body) == bodyLength {
+		if len(r.Body) == cl {
 			r.status = requestStatusDone
 		}
 
@@ -96,8 +118,7 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		n, err := reader.Read(buffer[readToIndex:])
 
 		if errors.Is(io.EOF, err) {
-			pr.status = requestStatusDone
-			break
+			return nil, errors.New("EOF reached")
 		} else if err != nil {
 			return nil, err
 		}
@@ -130,9 +151,13 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		fmt.Printf("Buffer: %s\n", string(buffer))
 	}
 
-	bodyLength, _ := strconv.Atoi(pr.Headers.Get("content-length"))
+	cl := 0
 
-	if bodyLength != 0 && bodyLength > len(pr.Body) {
+	if clh := pr.Headers.Get("content-length"); clh != "" {
+		cl, _ = strconv.Atoi(clh)
+	}
+
+	if cl != 0 && cl > len(pr.Body) {
 		return nil, errors.New("body length is shorter that Context-Length header value")
 	}
 

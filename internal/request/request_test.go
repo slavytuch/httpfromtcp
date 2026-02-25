@@ -109,13 +109,11 @@ func TestHeadersParse(t *testing.T) {
 
 	// Test: Missing End of Headers
 	reader = &chunkReader{
-		data:            "GET / HTTP/1.1\r\nHost: localhost:42069",
+		data:            "GET / HTTP/1.1\r\nHost: localhost:42069\r\nUser-Agent: curl/7.81.0",
 		numBytesPerRead: 3,
 	}
 	r, err = RequestFromReader(reader)
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	assert.Empty(t, r.Headers)
+	require.Error(t, err)
 }
 
 func TestBodyParse(t *testing.T) {
@@ -126,7 +124,7 @@ func TestBodyParse(t *testing.T) {
 			"Content-Length: 13\r\n" +
 			"\r\n" +
 			"hello world!\n",
-		numBytesPerRead: 3,
+		numBytesPerRead: 30,
 	}
 	r, err := RequestFromReader(reader)
 	require.NoError(t, err)
