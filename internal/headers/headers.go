@@ -58,3 +58,11 @@ func NewHeaders() Headers {
 func (h Headers) Get(name string) string {
 	return h[strings.ToLower(name)]
 }
+
+func (h Headers) Set(name, val string) {
+	h[strings.ToLower(name)] = val
+}
+
+func (h Headers) Delete(name string) {
+	delete(h, strings.ToLower(name))
+}

@@ -2,7 +2,6 @@ package request
 
 import (
 	"errors"
-	"fmt"
 	"httpfromtcp/internal/headers"
 	"io"
 	"regexp"
@@ -73,7 +72,6 @@ func (r *Request) parseSingle(data []byte) (int, error) {
 			return 0, err
 		}
 		if done {
-			fmt.Println("Done with headers!")
 			r.status = requestStatusParsingBody
 
 		}
@@ -148,7 +146,7 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 			readToIndex -= pn
 		}
 
-		fmt.Printf("Buffer: %s\n", string(buffer))
+		//fmt.Printf("Buffer: %s\n", string(buffer))
 	}
 
 	cl := 0
